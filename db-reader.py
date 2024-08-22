@@ -10,9 +10,15 @@ def main():
     # 讀取 CSV 檔案並存入資料庫
     read_csv_to_db('myab.csv')  # 請替換成您的 CSV 檔案路徑
     
-    # 執行 SQLite 指令
-    result = execute_sql_command('SELECT * FROM data')
-    print(result)
+    # 執行 SQLite3 指令
+    while True:
+        sql_command = input("SQL command: ")
+        result = execute_sql_command(sql_command)
+        if result == None:
+            print("退出 sqlite3 模式")
+            break
+        else:
+            print(result)
     
     # 輸出資料到 CSV 檔案
     export_to_csv('db_output.csv')
@@ -43,13 +49,23 @@ def read_csv_to_db(csv_file):
 
 def execute_sql_command(command):
     """執行 SQLite 指令並回傳結果"""
+    if command.strip().lower() in ['.exit', '.quit']:  # 處理 .exit 和 .quit 指令
+        print("退出程式。")
+        return None  # 返回 None 以指示退出
+
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
     try:
+        # 處理特殊指令
+        if command.strip().lower() == '.table':
+            return cursor.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()
+        elif command.strip().lower() == '.schema':
+            return cursor.execute("SELECT sql FROM sqlite_master WHERE type='table';").fetchall()
+        
         cursor.execute(command)
         # 如果是查詢指令，回傳結果
-        if command.strip().lower().startswith('select'):
+        if command.strip().lower().startswith(('select', 'pragma')):
             return cursor.fetchall()
         else:
             conn.commit()
